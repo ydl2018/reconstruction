@@ -1,0 +1,11 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`print acoount list 1`] = `
+"Statement for BigCo
+hamlet: $290.00 55  seats
+As You Like it: $155.00 35  seats
+othello: $140.00 40  seats
+amount owned is $585.00
+you earn 47 credits 
+"
+`;
