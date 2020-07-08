@@ -1,59 +1,90 @@
 
 
-function statement(invoice,plays){
-    let totalAmount = 0;
-    let volumeCredits = 0;
-    let result = `Statement for ${invoice.customer}\n`;
-    const format = new Intl.NumberFormat('en-US',{
-        style:'currency',
-        currency:'USD',
-        minimumFractionDigits:2
-    }).format;
+function statement(invoice, plays) {
 
 
-    for(let perf of invoice.performances){
-        const play = plays[perf.playID];
+    function renderPlainText(data, plays) {
 
-        let thisAmount =  amountedFor(play,perf)
+        const USD = (aNumber) => {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 2
+            }).format(aNumber / 100)
+        }
 
-        volumeCredits += Math.max(0,perf.audience - 30);
-
-        if(play.type === 'comedy') volumeCredits += Math.floor(perf.audience / 5)
-        result += `${play.name}: ${format(thisAmount/100) } ${perf.audience}  seats\n`
-        totalAmount += thisAmount;
+        let result = `Statement for ${data.customer}\n`;
+        for (let perf of data.performances) {
+            result += `${perf.play.name}: ${USD(perf.amount)} ${perf.audience}  seats\n`
+        }
+        result += 'amount owned is ' + USD(data.totalAmount) + '\n';
+        result += `you earn ${data.totalVolumeCredits} credits \n`;
+        return result;
     }
-
-    result += 'amount owned is ' + format(totalAmount/100) + '\n';
-    result += `you earn ${volumeCredits} credits \n`;
-
-    return result;
-}
-
-const getPlay = (aPerformance)=>{
-    return
-}
-const amountedFor = (play,aPerformance)=>{
-    let result;
-    switch(play.type){
-        case 'tragedy':
-            result = 4000;
-            if(aPerformance.audience > 30){
-                result += 1000 * (aPerformance.audience - 30)
-            }
-            break;
+    function enrichPerformance(aPerformance) {
+        const result = { ...aPerformance }
+        result.play = playFor(result);
+        result.amount = amountedFor(result)
+        result.volumeCredits = volumeCreditsFor(result)
+        return result
+    }
+    const playFor = (aPerformance) => {
+        return plays[aPerformance.playID]
+    }
+    const amountedFor = (aPerformance) => {
+        let result;
+        switch (aPerformance.play.type) {
+            case 'tragedy':
+                result = 4000;
+                if (aPerformance.audience > 30) {
+                    result += 1000 * (aPerformance.audience - 30)
+                }
+                break;
             case 'comedy':
                 result = 3000;
-                if(aPerformance.audience > 20){
+                if (aPerformance.audience > 20) {
                     result += 10000 + 500 * (aPerformance.audience - 30)
                 }
-            break;
-        default:
-            throw new Error('unknown type:'+ play.type)
+                break;
+            default:
+                throw new Error('unknown type:' + aPerformance.play)
+        }
+        return result
     }
-    return result
+    const volumeCreditsFor = (aPerformance) => {
+        let result = 0
+        result += Math.max(0, aPerformance.audience - 30);
+        if (aPerformance.play.type === 'comedy') result += Math.floor(aPerformance.audience / 5)
+        return result
+    }
+    const totalAmount = (data) => {
+        let result = 0;
+        for (let perf of data.performances) {
+            {
+                result += perf.amount;
+            }
+            return result
+        }
+    }
+
+
+    const totalVolumeCredits = (data) => {
+        let result = 0;
+        for (let perf of data.performances) {
+            result += perf.volumeCredits;
+        }
+        return result
+    }
+    const statementData = {};
+    statementData.customer = invoice.customer;
+    statementData.performances = invoice.performances.map(enrichPerformance);
+    statementData.totalAmount = totalAmount(statementData)
+    statementData.totalVolumeCredits = totalVolumeCredits(statementData)
+    return renderPlainText(statementData, plays)
 }
 
-export default statement
 
+
+export default statement
 
 
